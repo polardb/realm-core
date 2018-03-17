@@ -658,7 +658,10 @@ BPlusTreeBase& BPlusTreeBase::operator=(const BPlusTreeBase& rhs)
         MemRef mem(rhs.get_ref(), rhs_alloc);
         MemRef copy_mem = Array::clone(mem, rhs_alloc, m_alloc); // Throws
 
-        init_from_ref(copy_mem.get_ref());
+        ref_type ref = copy_mem.get_ref();
+        init_from_ref(ref);
+        if (this->m_parent)
+            this->m_parent->update_child_ref(this->m_ndx_in_parent, ref);
     }
 
     return *this;

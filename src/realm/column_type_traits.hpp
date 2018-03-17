@@ -41,6 +41,7 @@ class ArrayBool;
 class ArrayBoolNull;
 class ArrayKey;
 class ArrayKeyNonNullable;
+class ArrayMixed;
 template <class>
 class BasicArray;
 template <class>
@@ -48,6 +49,7 @@ class BasicArrayNull;
 struct Link;
 template <class>
 class Lst;
+class Mixed;
 
 template <class T>
 struct ColumnTypeTraits;
@@ -189,6 +191,11 @@ struct ColumnTypeTraits<BinaryData> {
 template <class T>
 struct ColumnTypeTraits<Lst<T>> {
     static const ColumnType column_id = ColumnTypeTraits<T>::column_id;
+};
+
+template <>
+struct ColumnTypeTraits<Mixed> {
+    using cluster_leaf_type = ArrayMixed;
 };
 
 template <DataType, bool Nullable>

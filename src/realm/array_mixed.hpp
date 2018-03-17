@@ -84,6 +84,7 @@ public:
     }
 
     void erase(size_t ndx);
+    void clear();
     void truncate_and_destroy_children(size_t ndx);
     void move(ArrayMixed& dst, size_t ndx);
 

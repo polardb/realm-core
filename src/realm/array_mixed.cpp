@@ -137,6 +137,22 @@ void ArrayMixed::erase(size_t ndx)
     m_composite.erase(ndx);
 }
 
+void ArrayMixed::clear()
+{
+    if (m_composite.is_attached()) {
+        m_composite.clear();
+        if (m_ints.is_attached()) {
+            m_ints.clear();
+        }
+        if (m_strings.is_attached()) {
+            m_strings.clear();
+        }
+        if (m_int_pairs.is_attached()) {
+            m_int_pairs.clear();
+        }
+    }
+}
+
 void ArrayMixed::truncate_and_destroy_children(size_t ndx)
 {
     for (size_t i = size(); i > ndx; i--) {

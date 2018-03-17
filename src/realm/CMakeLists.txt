@@ -15,6 +15,7 @@ set(REALM_SOURCES
     array_timestamp.cpp
     bplustree.cpp
     cluster.cpp
+    dictionary.cpp
     column_binary.cpp
     disable_sync_to_disk.cpp
     exceptions.cpp
@@ -94,6 +95,7 @@ set(REALM_INSTALL_GENERAL_HEADERS
     column_type.hpp
     column_type_traits.hpp
     data_type.hpp
+    dictionary.hpp
     disable_sync_to_disk.hpp
     exceptions.hpp
     group.hpp
