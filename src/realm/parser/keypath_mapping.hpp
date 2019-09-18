@@ -35,6 +35,7 @@ struct KeyPathElement
     size_t col_ndx;
     DataType col_type;
     bool is_backlink;
+    DataType subtable_col_type; // for list of primitives
 };
 
 class BacklinksRestrictedError : public std::runtime_error {

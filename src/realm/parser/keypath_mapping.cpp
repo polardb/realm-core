@@ -16,6 +16,8 @@
 //
 ////////////////////////////////////////////////////////////////////////////
 
+#include <realm/descriptor.hpp>
+
 #include "keypath_mapping.hpp"
 
 #include <functional>
@@ -122,6 +124,12 @@ KeyPathElement KeyPathMapping::process_next_path(ConstTableRef table, KeyPath& k
                  util::format("No property '%1' on object of type '%2'", keypath[index], get_printable_table_name(*table)));
 
     DataType cur_col_type = table->get_column_type(col_ndx);
+
+    if (cur_col_type == type_Table) {
+        ConstDescriptorRef subtable_desc = table->get_subdescriptor(col_ndx);
+        REALM_ASSERT(subtable_desc->get_column_count() >= 1);
+        cur_col_type = subtable_desc->get_column_type(0);
+    }
 
     index++;
     KeyPathElement element;

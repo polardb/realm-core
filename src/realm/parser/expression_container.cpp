@@ -54,7 +54,7 @@ ExpressionContainer::ExpressionContainer(Query& query, const parser::Expression&
             case parser::Expression::KeyPathOp::SizeString:
                 REALM_FALLTHROUGH;
             case parser::Expression::KeyPathOp::SizeBinary:
-                if (pe.get_dest_type() == type_LinkList || pe.get_dest_type() == type_Link) {
+                if (pe.get_dest_type() == type_LinkList || pe.get_dest_type() == type_Link || pe.get_dest_type() == type_Table) {
                     type = ExpressionInternal::exp_OpCount;
                     storage = CollectionOperatorExpression<parser::Expression::KeyPathOp::Count>(std::move(pe), e.op_suffix, mapping);
                 }
