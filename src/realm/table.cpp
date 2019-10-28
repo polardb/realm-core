@@ -2401,9 +2401,12 @@ void Table::print() const
                     // std::cout << "count:" << std::setw(4) << value << " ";
                     break;
                 }
+                case col_type_Dictionary: {
+                    // FIXME
+                    break;
+                }
 
                 // Not supported
-                case col_type_OldStringEnum:
                 case col_type_OldTable:
                 case col_type_OldMixed:
                 case col_type_OldDateTime:

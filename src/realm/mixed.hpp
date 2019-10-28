@@ -509,6 +509,7 @@ inline std::basic_ostream<Ch, Tr>& operator<<(std::basic_ostream<Ch, Tr>& out, c
                 break;
             case type_OldDateTime:
             case type_OldTable:
+            case type_Dictionary:
             case type_OldMixed:
             case type_LinkList:
                 REALM_ASSERT(false);

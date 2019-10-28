@@ -765,6 +765,13 @@ void Cluster::create(size_t nb_leaf_columns)
             case col_type_Timestamp:
                 do_create<ArrayTimestamp>(col_key);
                 break;
+            case col_type_Dictionary: {
+                ArrayInteger arr(m_alloc);
+                arr.create(type_HasRefs);
+                arr.set_parent(this, col_ndx.val + s_first_col_index);
+                arr.update_parent();
+                break;
+            }
             case col_type_Link:
                 do_create<ArrayKey>(col_key);
                 break;
@@ -932,6 +939,15 @@ void Cluster::insert_row(size_t ndx, ObjKey k, const FieldValues& init_values)
             case col_type_Timestamp:
                 do_insert_row<ArrayTimestamp>(ndx, col_key, init_value, nullable);
                 break;
+            case col_type_Dictionary: {
+                REALM_ASSERT(init_value.is_null());
+                ArrayInteger arr(m_alloc);
+                arr.set_parent(this, col_ndx.val + s_first_col_index);
+                arr.init_from_parent();
+                arr.insert(2 * ndx, 0);
+                arr.insert(2 * ndx + 1, 0);
+                break;
+            }
             case col_type_Link:
                 do_insert_key(ndx, col_key, init_value, ObjKey(k.value + get_offset()));
                 break;
@@ -1011,6 +1027,9 @@ void Cluster::move(size_t ndx, ClusterNode* new_node, int64_t offset)
                 break;
             case col_type_Timestamp:
                 do_move<ArrayTimestamp>(ndx, col_key, new_leaf);
+                break;
+            case col_type_Dictionary:
+                do_move<ArrayInteger>(2 * ndx, col_key, new_leaf);
                 break;
             case col_type_Link:
                 do_move<ArrayKey>(ndx, col_key, new_leaf);
@@ -1111,6 +1130,19 @@ void Cluster::insert_column(ColKey col_key)
         case col_type_Timestamp:
             do_insert_column<ArrayTimestamp>(col_key, nullable);
             break;
+        case col_type_Dictionary: {
+            size_t sz = node_size();
+
+            ArrayInteger arr(m_alloc);
+            arr.Array::create(type_HasRefs, false, 2 * sz, 0);
+            auto col_ndx = col_key.get_index();
+            unsigned idx = col_ndx.val + s_first_col_index;
+            if (idx == size())
+                Array::insert(idx, from_ref(arr.get_ref()));
+            else
+                Array::set(idx, from_ref(arr.get_ref()));
+            break;
+        }
         case col_type_Link:
             do_insert_column<ArrayKey>(col_key, nullable);
             break;
@@ -1380,6 +1412,18 @@ size_t Cluster::erase(ObjKey key, CascadeState& state)
             case col_type_Timestamp:
                 do_erase<ArrayTimestamp>(ndx, col_key);
                 break;
+            case col_type_Dictionary: {
+                ArrayInteger values(m_alloc);
+                values.set_parent(this, col_ndx.val + s_first_col_index);
+                values.init_from_parent();
+                if (ref_type ref = values.get_as_ref(2 * ndx))
+                    Array::destroy_deep(ref, m_alloc);
+                if (ref_type ref = values.get_as_ref(2 * ndx + 1))
+                    Array::destroy_deep(ref, m_alloc);
+                values.erase(2 * ndx);
+                values.erase(2 * ndx + 1);
+                break;
+            }
             case col_type_Link:
                 do_erase_key(ndx, col_key, state);
                 break;

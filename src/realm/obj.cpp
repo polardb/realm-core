@@ -26,6 +26,7 @@
 #include "realm/array_timestamp.hpp"
 #include "realm/array_key.hpp"
 #include "realm/array_backlink.hpp"
+#include "realm/dictionary.hpp"
 #include "realm/column_type_traits.hpp"
 #include "realm/index_string.hpp"
 #include "realm/cluster_tree.hpp"
@@ -113,6 +114,9 @@ int ConstObj::cmp(const ConstObj& other, ColKey col_key) const
             return cmp<Timestamp>(other, col_ndx);
         case type_Link:
             return cmp<ObjKey>(other, col_ndx);
+        case type_Dictionary: {
+            return 0;
+        }
         case type_OldDateTime:
         case type_OldTable:
         case type_OldMixed:
@@ -321,6 +325,12 @@ ConstObj ConstObj::get_linked_object(ColKey link_col_key) const
     return target_table->get_object(key);
 }
 
+ConstDictionary ConstObj::get_dictionary(ColKey col_key) const
+{
+    update_if_needed();
+    return Dictionary(*this, col_key);
+}
+
 template <class T>
 inline bool ConstObj::do_is_null(ColKey::Idx col_ndx) const
 {
@@ -366,6 +376,8 @@ bool ConstObj::is_null(ColKey col_key) const
                 return do_is_null<ArrayBinary>(col_ndx);
             case col_type_Timestamp:
                 return do_is_null<ArrayTimestamp>(col_ndx);
+            case col_type_Dictionary:
+                return false;
             case col_type_Link:
                 return do_is_null<ArrayKey>(col_ndx);
             default:
@@ -514,6 +526,7 @@ void out_mixed(std::ostream& out, const Mixed& val)
             break;
         case type_Link:
         case type_LinkList:
+        case type_Dictionary:
         case type_OldDateTime:
         case type_OldMixed:
         case type_OldTable:
@@ -920,6 +933,43 @@ void Obj::set_int(ColKey col_key, int64_t value)
     values.set_parent(&fields, col_ndx.val + 1);
     values.init_from_parent();
     values.set(m_row_ndx, value);
+}
+
+void Obj::set_dict_ref(ColKey::Idx col_ndx, size_t ndx, ref_type value)
+{
+    update_if_needed();
+    ensure_writeable();
+
+    Allocator& alloc = get_alloc();
+    alloc.bump_content_version();
+    Array fallback(alloc);
+    Array& fields = get_tree_top()->get_fields_accessor(fallback, m_mem);
+    REALM_ASSERT(col_ndx.val + 1 < fields.size());
+    Array values(alloc);
+    values.set_parent(&fields, col_ndx.val + 1);
+    values.init_from_parent();
+    values.set(ndx, from_ref(value));
+}
+
+ref_type Obj::get_dict_ref(ColKey::Idx col_ndx, size_t ndx) const
+{
+    auto& alloc = get_alloc();
+    auto current_version = alloc.get_storage_version(m_instance_version);
+    if (current_version != m_storage_version) {
+        update();
+    }
+
+    ref_type ref = to_ref(Array::get(m_mem.get_addr(), col_ndx.val + 1));
+    char* header = alloc.translate(ref);
+    int width = Array::get_width_from_header(header);
+    char* data = Array::get_data_from_header(header);
+    REALM_TEMPEX(return get_direct, width, (data, ndx));
+}
+
+Dictionary Obj::get_dictionary(ColKey col_key)
+{
+    update_if_needed();
+    return Dictionary(*this, col_key);
 }
 
 void Obj::add_backlink(ColKey backlink_col_key, ObjKey origin_key)

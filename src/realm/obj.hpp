@@ -34,6 +34,8 @@ class TableView;
 class ConstLstBase;
 class LstBase;
 struct ObjectID;
+class ConstDictionary;
+class Dictionary;
 
 template <class>
 class ConstLstIf;
@@ -127,6 +129,8 @@ public:
     ConstLstBasePtr get_listbase_ptr(ColKey col_key) const;
 
     size_t get_link_count(ColKey col_key) const;
+
+    ConstDictionary get_dictionary(ColKey col_key) const;
 
     bool is_null(ColKey col_key) const;
     bool is_null(StringData col_name) const
@@ -261,6 +265,8 @@ public:
 
     LstBasePtr get_listbase_ptr(ColKey col_key) const;
 
+    Dictionary get_dictionary(ColKey col_key);
+
 private:
     friend class Cluster;
     friend class ConstLstBase;
@@ -269,6 +275,7 @@ private:
     template <class>
     friend class Lst;
     friend class LnkLst;
+    friend class ConstDictionary;
 
     Obj(const ConstObj& other)
         : ConstObj(other)
@@ -286,6 +293,12 @@ private:
     void do_set_null(ColKey col_key);
 
     void set_int(ColKey col_key, int64_t value);
+    void set_dict_ref(ColKey::Idx col_ndx, size_t ndx, ref_type value);
+    ref_type get_dict_ref(ColKey::Idx col_ndx, size_t ndx) const;
+    size_t get_row_ndx() const
+    {
+        return m_row_ndx;
+    }
     void add_backlink(ColKey backlink_col, ObjKey origin_key);
     bool remove_one_backlink(ColKey backlink_col, ObjKey origin_key);
     void nullify_link(ColKey origin_col, ObjKey target_key);

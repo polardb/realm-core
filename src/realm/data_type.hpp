@@ -48,6 +48,7 @@ enum DataType {
     type_Double = 10,
     type_String = 2,
     type_Binary = 4,
+    type_Dictionary = 3,
     type_OldDateTime = 7,
     type_Timestamp = 8,
     type_OldTable = 5,

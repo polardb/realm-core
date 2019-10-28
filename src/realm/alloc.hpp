@@ -261,6 +261,7 @@ private:
     friend class ConstObj;
     friend class Obj;
     friend class ConstLstBase;
+    friend class ConstDictionary;
 };
 
 

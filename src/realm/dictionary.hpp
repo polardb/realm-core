@@ -25,7 +25,7 @@
 
 namespace realm {
 
-class ConstDictionary {
+class ConstDictionary : public ArrayParent {
 public:
     class Iterator;
 
@@ -33,6 +33,19 @@ public:
         : m_keys(Allocator::get_default())
         , m_values(Allocator::get_default())
     {
+        ColKey null_col_key;
+        m_col_ndx = null_col_key.get_index();
+    }
+    ConstDictionary(const ConstObj& obj, ColKey col_key)
+        : m_obj(obj)
+        , m_col_ndx(col_key.get_index())
+        , m_keys(obj.get_alloc())
+        , m_values(obj.get_alloc())
+    {
+        size_t ndx = m_obj.get_row_ndx();
+        m_keys.set_parent(this, ndx * 2);
+        m_values.set_parent(this, ndx * 2 + 1);
+        init_from_parent();
     }
 
     ConstDictionary(const ConstDictionary&);
@@ -50,10 +63,7 @@ public:
         return !m_keys.is_attached();
     }
 
-    size_t size() const
-    {
-        return m_keys.is_attached() ? m_keys.size() : 0;
-    }
+    size_t size() const;
 
     // throws std::out_of_range if key is not found
     Mixed get(Mixed key) const;
@@ -64,14 +74,24 @@ public:
 protected:
     friend class ArrayDictionary;
 
-    BPlusTree<Mixed> m_keys;
-    BPlusTree<Mixed> m_values;
+    Obj m_obj;
+    ColKey::Idx m_col_ndx;
+    mutable uint_fast64_t m_content_version = 0;
+    mutable BPlusTree<Mixed> m_keys;
+    mutable BPlusTree<Mixed> m_values;
 
     void _destroy()
     {
         m_keys.destroy();
         m_values.destroy();
     }
+
+    void update_if_needed() const;
+    void init_from_parent() const;
+
+    void update_child_ref(size_t ndx, ref_type new_ref) override;
+    ref_type get_child_ref(size_t ndx) const noexcept override;
+    std::pair<ref_type, size_t> get_to_dot_parent(size_t) const override;
 };
 
 class ConstDictionary::Iterator {
@@ -131,6 +151,28 @@ private:
 
 class Dictionary : public ConstDictionary {
 public:
+    class MixedRef {
+    public:
+        operator Mixed()
+        {
+            return m_dict._get(m_ndx);
+        }
+        MixedRef& operator=(Mixed val)
+        {
+            m_dict._set(m_ndx, val);
+            return *this;
+        }
+
+    private:
+        friend class Dictionary;
+        MixedRef(Dictionary& dict, size_t ndx)
+            : m_dict(dict)
+            , m_ndx(ndx)
+        {
+        }
+        Dictionary& m_dict;
+        size_t m_ndx;
+    };
     using ConstDictionary::ConstDictionary;
 
     ConstDictionary& operator=(const ConstDictionary& other);
@@ -141,11 +183,22 @@ public:
     // first points to inserted/updated element.
     // second is true if the element was inserted
     std::pair<ConstDictionary::Iterator, bool> insert(Mixed key, Mixed value);
+    void erase(Mixed key);
     // adds entry if key is not found
-    Mixed operator[](Mixed key);
-
+    MixedRef operator[](Mixed key);
 
     void clear();
+
+private:
+    friend class MixedRef;
+    Mixed _get(size_t ndx) const
+    {
+        return m_values.get(ndx);
+    }
+    void _set(size_t ndx, Mixed value)
+    {
+        m_values.set(ndx, value);
+    }
 };
 }
 

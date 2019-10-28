@@ -42,6 +42,7 @@ class ArrayBoolNull;
 class ArrayKey;
 class ArrayKeyNonNullable;
 class ArrayMixed;
+class ArrayDictionary;
 template <class>
 class BasicArray;
 template <class>
@@ -50,6 +51,7 @@ struct Link;
 template <class>
 class Lst;
 class Mixed;
+class Dictionary;
 
 template <class T>
 struct ColumnTypeTraits;

@@ -44,7 +44,10 @@ public:
     {
         return m_arr->is_attached();
     }
-
+    void detach() const
+    {
+        m_arr->detach();
+    }
     ref_type get_ref() const
     {
         return m_arr->get_ref();

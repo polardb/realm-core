@@ -18,7 +18,10 @@
 
 #include "testsettings.hpp"
 
+#include <realm.hpp>
 #include <realm/dictionary.hpp>
+#include <realm/group.hpp>
+#include <realm/history.hpp>
 
 #include "test.hpp"
 
@@ -88,6 +91,72 @@ TEST(Dictionary_Basics)
     CHECK_EQUAL(other.get("Goodbye").get_string(), "cruel world");
     other.insert("Goodbye", 100.0);
     CHECK_EQUAL(other.get("Goodbye").get_double(), 100.0);
+    other.erase("Goodbye");
+    CHECK_EQUAL(other.size(), 1);
     dict.destroy();
     other.destroy();
+}
+
+TEST(Group_Dictionary)
+{
+    Group g;
+    auto foo = g.add_table("foo");
+
+    auto col_dict = foo->add_column(type_Dictionary, "dictionaries", true);
+
+    Obj obj1 = foo->create_object();
+    Obj obj2 = foo->create_object();
+
+    {
+        Dictionary dict = obj1.get_dictionary(col_dict);
+        dict.insert("Hello", 9);
+        dict["Goodbye"] = "cruel world";
+    }
+    auto cmp = [this](Mixed x, Mixed y) { CHECK_EQUAL(x, y); };
+    {
+        Dictionary dict = obj1.get_dictionary(col_dict);
+        cmp(dict.get("Hello"), 9);
+        cmp(dict["Goodbye"], "cruel world");
+    }
+}
+
+TEST(DB_Dictionary)
+{
+    SHARED_GROUP_TEST_PATH(path);
+    auto hist = make_in_realm_history(path);
+    DBRef db = DB::create(*hist);
+    ObjKey k0;
+    ColKey col_dict;
+    auto cmp = [this](Mixed x, Mixed y) { CHECK_EQUAL(x, y); };
+
+    auto rt = db->start_read();
+    {
+        WriteTransaction wt(db);
+        auto foo = wt.add_table("foo");
+        col_dict = foo->add_column(type_Dictionary, "dictionaries", true);
+
+        Obj obj1 = foo->create_object();
+        Obj obj2 = foo->create_object();
+        Dictionary dict = obj1.get_dictionary(col_dict);
+        k0 = obj1.get_key();
+        dict.insert("Hello", 9);
+        dict["Goodbye"] = "cruel world";
+
+        wt.commit();
+    }
+    rt->advance_read();
+    ConstTableRef table = rt->get_table("foo");
+    ConstDictionary dict = table->get_object(k0).get_dictionary(col_dict);
+    cmp(dict.get("Hello"), 9);
+    cmp(dict.get("Goodbye"), "cruel world");
+    {
+        WriteTransaction wt(db);
+        auto foo = wt.get_table("foo");
+        Dictionary d = foo->get_object(k0).get_dictionary(col_dict);
+        d["Good morning"] = "sunshine";
+
+        wt.commit();
+    }
+    rt->advance_read();
+    cmp(dict.get("Good morning"), "sunshine");
 }

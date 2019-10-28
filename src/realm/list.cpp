@@ -78,6 +78,7 @@ ConstLstBasePtr ConstObj::get_listbase_ptr(ColKey col_key) const
             return ConstLstBasePtr(const_cast<ConstLstBase*>(clb));
         }
         case type_Link:
+        case type_Dictionary:
         case type_OldDateTime:
         case type_OldTable:
         case type_OldMixed:
@@ -130,6 +131,7 @@ LstBasePtr Obj::get_listbase_ptr(ColKey col_key) const
         case type_LinkList:
             return get_linklist_ptr(col_key);
         case type_Link:
+        case type_Dictionary:
         case type_OldDateTime:
         case type_OldTable:
         case type_OldMixed:
